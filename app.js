@@ -8,7 +8,7 @@ app.use(express.json());
 let database = null;
 const initializeDbAndServer = async () => {
   try {
-    database = await open({ fileName: databasePath, driver: sqlite3.Database });
+    database = await open({ filename: databasePath, driver: sqlite3.Database });
     app.listen(3000, () =>
       console.log("server running at http://localhost:3000/")
     );
@@ -36,8 +36,22 @@ const convertDistrictResponseObject = (dbObject) => {
     deaths: dbObject.deaths,
   };
 };
-app.get("/state/", async (request, response) => {
+app.get("/states/", async (request, response) => {
   const getStatesQuery = `SELECT * FROM state;`;
   const statesArray = await database.all(getStatesQuery);
-  response.send(statesArray);
+  response.send(
+    statesArray.map((state) => ({
+      stateId: state.state_id,
+      stateName: state.sate_name,
+      population: state.population,
+    }))
+  );
 });
+app.get("/states/:stateId", async (request, response) => {
+  const { stateId } = request.params;
+  const getStateQuery = `
+    SELECT * FROM state WHERE state_id='${stateId};`;
+  const state = await database.get(getStateQuery);
+  response.send(convertStateResponseObject(state));
+});
+module.exports = app;
